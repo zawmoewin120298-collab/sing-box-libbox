@@ -1,0 +1,39 @@
+name: Build libbox.aar
+
+on:
+  workflow_dispatch:  # လက်နဲ့ Run ချင်ရင် ဒီအပိုင်းကို သုံးပါ
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+
+      - name: Install Android NDK
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-r28-linux.zip
+          unzip android-ndk-r28-linux.zip
+          echo "ANDROID_NDK_HOME=${{ github.workspace }}/android-ndk-r28" >> $GITHUB_ENV
+
+      - name: Build libbox.aar
+        run: |
+          cd libbox
+          gomobile bind -v -androidapi 21 -target=android/arm64,android/amd64,android/386,android/arm -o libbox.aar ./
+
+      - name: Upload AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: libbox-aar
+          path: libbox/libbox.aar
